@@ -1,0 +1,29 @@
+﻿Para iniciar uma Migration alguns comandos devem ser inicializados na seguinte ordem:
+
+
+1 - dotnet ef migrations add "<NomeDaMigration>"
+2 - dotnet ef database upgrade
+
+Atributos do Data Annotation:
+
+[Key] = Chave primaria da propriedade na tabela;
+[Table("tableName")] = Nome da tabela a ser mapeada no Database;
+[Column(typeName="int|decimal(10,2)")] = Coluna da tabela a qual a propriedade será mapeada;
+[DataType]
+[ForeignKey]
+[NotMapped]
+[StringLength] = Tamanho minimo ou maximo permitido para o tipo
+[Required] = Campo obrigatorio
+
+Para popular as tabelas do mysql usamos:
+
+ex: dotnet ef migrations add "PopulaTabelaCategorias"
+
+O migration será criado vazio, então dentro dos metodos UP e DOWN adicionamos:
+
+UP => migrationBuilder.SQL(<CodigoSQL>)
+DOWN => migrationBuilder.SQL(<Delete FROM TabelaQueDesejaDeletar>)
+
+Por fim use:
+
+dotnet ef database update
