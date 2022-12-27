@@ -2,6 +2,7 @@
 using ApiCatalago.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace ApiCatalago.Controllers
 {
@@ -20,20 +21,20 @@ namespace ApiCatalago.Controllers
         [HttpGet("produtos")]
         public ActionResult<IEnumerable<Categoria>> GetCategoriasProdutos()
         {
-            return _context.Categorias.Include(p => p.Produtos).ToList();
+            return _context.Categorias.Include(p => p.Produtos).AsNoTracking().Take(5).ToList();
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<Categoria>> Get()
         {
-            return _context.Categorias.ToList();
+            return _context.Categorias.AsNoTracking().Take(5).ToList();
         }
 
 
         [HttpGet("{id:int}", Name = "ObterCategoria")]
         public ActionResult Get(int id)
         {
-            var categoria = _context.Categorias?.FirstOrDefault(id => id.CategoriaId.Equals(id));       
+            var categoria = _context.Categorias?.AsNoTracking().FirstOrDefault(id => id.CategoriaId.Equals(id));
 
             if (categoria is null)
                 return NotFound(CATEGORIA_NOTFOUND);
@@ -57,7 +58,7 @@ namespace ApiCatalago.Controllers
         [HttpPut("{id:int}")]
         public ActionResult Put(int id, [FromBody] Categoria categoria)
         {
-            if(id != categoria.CategoriaId)
+            if (id != categoria.CategoriaId)
                 return BadRequest();
 
             _context.Entry(categoria).State = EntityState.Modified;
@@ -70,8 +71,8 @@ namespace ApiCatalago.Controllers
         public ActionResult Delete(int id)
         {
             var categoria = _context.Categorias?.FirstOrDefault(id => id.CategoriaId.Equals(id));
-            
-            if(categoria is null)
+
+            if (categoria is null)
                 return NotFound(CATEGORIA_NOTFOUND);
 
             _context.Categorias?.Remove(categoria);

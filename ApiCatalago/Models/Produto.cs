@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace ApiCatalago.Models;
 
@@ -33,5 +34,7 @@ public class Produto
     /// Mapeando o relacionamento de um para muitos. Onde produtos possui um ID de categoria e uma Categoria.
     /// </summary>
     public int CategoriaID { get; set; }
+
+    [JsonIgnore]
     public Categoria? Categoria { get; set; }
 }

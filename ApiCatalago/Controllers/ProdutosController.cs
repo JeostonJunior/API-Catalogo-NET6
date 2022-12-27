@@ -2,6 +2,7 @@
 using ApiCatalago.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 namespace ApiCatalago.Controllers
 {
@@ -14,34 +15,71 @@ namespace ApiCatalago.Controllers
         private const string PRODUTO_NOTFOUND = "Produto não encontrado";
         private const string PRODUTO_BADREQUEST = "Produto não pode ser nulo";
         private const string PRODUTO_IDERROR = "O id do produto não coincide";
+        private const string PRODUTO_ERROR = "Ocoreu um erro ao tratar a sua solicitação";
 
         public ProdutosController(ApiCatalogoDbContext context)
         {
             _context = context;
         }
 
+        [HttpGet("categorias")]
+        public ActionResult<IEnumerable<Produto>> GetProdutosCategoria()
+        {           
+            try
+            {
+                var produto = _context.Produtos.Include(p => p.Categoria).AsNoTracking().ToList();
+
+                if (produto is null)
+                    return NotFound(PRODUTO_NOTFOUND);
+
+                return Ok(produto);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, PRODUTO_ERROR);
+            }
+        }
+
         // Endpoint simples sem passagem de parametros
         [HttpGet]
+        
         public ActionResult<IEnumerable<Produto>> Get()
         {
-            var produtos = _context.Produtos?.Include(c => c.Categoria).ToList();
 
-            if (produtos == null)
-                return NotFound(PRODUTO_NOTFOUND);
+            try
+            {
+                var produto = _context.Produtos?.AsNoTracking().ToList();
+                
+                if (produto is null)
+                    return NotFound(PRODUTO_NOTFOUND);
+                
+                return Ok(produto);
+            }
+            catch (Exception)
+            {
 
-            return produtos;
+                return StatusCode(StatusCodes.Status500InternalServerError, PRODUTO_ERROR);
+            }            
         }
 
         // Se passado dentro {} é esperado um input no swagger
         [HttpGet("{id:int}", Name="ObterProduto")]
         public ActionResult<Produto> Get(int id)
         {
-            var produto = _context.Produtos?.FirstOrDefault(p => p.ProdutoId.Equals(id));
+            try
+            {
+                var produto = _context.Produtos?.AsNoTracking().FirstOrDefault(p => p.ProdutoId.Equals(id));
 
-            if (produto is null)
-                return NotFound(PRODUTO_NOTFOUND);
+                if (produto is null)
+                    return NotFound(PRODUTO_NOTFOUND);
 
-            return produto;
+                return Ok(produto);
+            }
+            catch (Exception)
+            {
+
+                return StatusCode(StatusCodes.Status500InternalServerError, PRODUTO_ERROR);
+            }
         }
 
         // SaveChanges é para salvar o produto na tabela do banco,
