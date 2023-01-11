@@ -22,6 +22,46 @@ namespace ApiCatalago.Controllers
             _context = context;
         }
 
+        // Esse tipo de ActionResult tem como retorno um verbo HTTP ou o proprio objeto referenciado ActionResult<T> T é generico e pode ser "qualquer coisa"
+        [HttpGet("GetProdutoActionResult/{id:int:min(1)}")]
+        public ActionResult<Produto> GetProdutoActionResult(int id)
+        {
+            try
+            {
+                var produto = _context.Produtos?.AsNoTracking().FirstOrDefault(p => p.ProdutoId.Equals(id));
+
+                if (produto is null)
+                {
+                    return NotFound(PRODUTO_NOTFOUND);
+                }
+                return produto;
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, PRODUTO_ERROR);
+            }
+        }
+
+        // IActionResult é uma interface, ActionResult implementa esssa interface, portanto é aconselhavel utilizar IActionResult para tratar os retornos do metodo
+        [HttpGet("IActionResultProduto")]
+        public IActionResult GetProduto()
+        {
+            try
+            {
+                var produto = _context.Produtos.AsNoTracking().ToList();
+
+                if (produto is null)
+                {
+                    return NotFound(produto);
+                }
+                return Ok(produto);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, PRODUTO_ERROR);
+            }
+        }
+
         [HttpGet("categorias")]
         public ActionResult<IEnumerable<Produto>> GetProdutosCategoria()
         {           
@@ -42,7 +82,6 @@ namespace ApiCatalago.Controllers
 
         // Endpoint simples sem passagem de parametros
         [HttpGet]
-        
         public ActionResult<IEnumerable<Produto>> Get()
         {
 
@@ -63,7 +102,8 @@ namespace ApiCatalago.Controllers
         }
 
         // Se passado dentro {} é esperado um input no swagger
-        [HttpGet("{id:int}", Name="ObterProduto")]
+        // min() indica que o valor do id tem que ser maior que 0, caso seja indicado 0 não será realizado uma requisição na API
+        [HttpGet("{id:int:min(1)}", Name="ObterProduto")]
         public ActionResult<Produto> Get(int id)
         {
             try
@@ -71,8 +111,9 @@ namespace ApiCatalago.Controllers
                 var produto = _context.Produtos?.AsNoTracking().FirstOrDefault(p => p.ProdutoId.Equals(id));
 
                 if (produto is null)
+                {
                     return NotFound(PRODUTO_NOTFOUND);
-
+                }           
                 return Ok(produto);
             }
             catch (Exception)
@@ -85,7 +126,7 @@ namespace ApiCatalago.Controllers
         // SaveChanges é para salvar o produto na tabela do banco,
         // e CreatedAtRouteResult salva o resultado em uma rota e retorna ele;
         [HttpPost]
-        public ActionResult Post(Produto produto)
+        public IActionResult Post(Produto produto)
         {
             if(produto is null)
                 return BadRequest(PRODUTO_BADREQUEST);
@@ -100,7 +141,7 @@ namespace ApiCatalago.Controllers
 
         //Entry permite acesso a um objeto na tabela e permite alterar o seu estado a partir de EntityState.Modified
         [HttpPut("{id:int}")]
-        public ActionResult Put(int id, Produto produto)
+        public IActionResult Put(int id, Produto produto)
         {
             if(id != produto.ProdutoId)
                 return BadRequest(PRODUTO_IDERROR);
@@ -113,7 +154,7 @@ namespace ApiCatalago.Controllers
 
         //Segue a mesma logica de get, mas com a diferença que remove da lista o produto, depois salva 
         [HttpDelete("{id:int}")]
-        public ActionResult Delete(int id)
+        public IActionResult Delete(int id)
         {
             var produto = _context.Produtos?.FirstOrDefault(p => p.ProdutoId.Equals(id));
 
