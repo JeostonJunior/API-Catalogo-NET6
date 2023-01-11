@@ -81,18 +81,19 @@ namespace ApiCatalago.Controllers
         }
 
         // Endpoint simples sem passagem de parametros
+        // Utilização do metodo async Task<>, realiza requisições em paralelo
         [HttpGet]
-        public ActionResult<IEnumerable<Produto>> Get()
+        public async Task<ActionResult<IEnumerable<Produto>>> GetAsync()
         {
 
             try
             {
-                var produto = _context.Produtos?.AsNoTracking().ToList();
+                var produto = _context.Produtos?.AsNoTracking().ToListAsync();
                 
                 if (produto is null)
                     return NotFound(PRODUTO_NOTFOUND);
                 
-                return Ok(produto);
+                return await produto;
             }
             catch (Exception)
             {
