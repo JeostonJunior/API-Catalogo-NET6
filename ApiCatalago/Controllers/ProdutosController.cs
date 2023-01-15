@@ -2,7 +2,6 @@
 using ApiCatalago.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json.Serialization;
 
 namespace ApiCatalago.Controllers
 {
@@ -22,57 +21,17 @@ namespace ApiCatalago.Controllers
             _context = context;
         }
 
-        // Esse tipo de ActionResult tem como retorno um verbo HTTP ou o proprio objeto referenciado ActionResult<T> T é generico e pode ser "qualquer coisa"
-        [HttpGet("GetProdutoActionResult/{id:int:min(1)}")]
-        public ActionResult<Produto> GetProdutoActionResult(int id)
-        {
-            try
-            {
-                var produto = _context.Produtos?.AsNoTracking().FirstOrDefault(p => p.ProdutoId.Equals(id));
-
-                if (produto is null)
-                {
-                    return NotFound(PRODUTO_NOTFOUND);
-                }
-                return produto;
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, PRODUTO_ERROR);
-            }
-        }
-
-        // IActionResult é uma interface, ActionResult implementa esssa interface, portanto é aconselhavel utilizar IActionResult para tratar os retornos do metodo
-        [HttpGet("IActionResultProduto")]
-        public IActionResult GetProduto()
-        {
-            try
-            {
-                var produto = _context.Produtos.AsNoTracking().ToList();
-
-                if (produto is null)
-                {
-                    return NotFound(produto);
-                }
-                return Ok(produto);
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, PRODUTO_ERROR);
-            }
-        }
-
         [HttpGet("categorias")]
-        public ActionResult<IEnumerable<Produto>> GetProdutosCategoria()
-        {           
+        public async Task<ActionResult<IEnumerable<Produto>>> GetProdutosCategoriaAsync()
+        {
             try
             {
-                var produto = _context.Produtos.Include(p => p.Categoria).AsNoTracking().ToList();
+                var produto = await _context.Produtos.Include(p => p.Categoria).AsNoTracking().ToListAsync();
 
                 if (produto is null)
-                    return NotFound(PRODUTO_NOTFOUND);
+                    return StatusCode(StatusCodes.Status404NotFound, produto);
 
-                return Ok(produto);
+                return StatusCode(StatusCodes.Status200OK, produto);
             }
             catch (Exception)
             {
@@ -85,41 +44,39 @@ namespace ApiCatalago.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Produto>>> GetAsync()
         {
-
             try
             {
-                var produto = _context.Produtos?.AsNoTracking().ToListAsync();
-                
+                var produto = await _context.Produtos?.AsNoTracking().ToListAsync();
+
                 if (produto is null)
-                    return NotFound(PRODUTO_NOTFOUND);
-                
-                return await produto;
+                    return StatusCode(StatusCodes.Status404NotFound, produto); ;
+
+                return produto;
             }
             catch (Exception)
             {
-
                 return StatusCode(StatusCodes.Status500InternalServerError, PRODUTO_ERROR);
-            }            
+            }
         }
 
         // Se passado dentro {} é esperado um input no swagger
         // min() indica que o valor do id tem que ser maior que 0, caso seja indicado 0 não será realizado uma requisição na API
-        [HttpGet("{id:int:min(1)}", Name="ObterProduto")]
-        public ActionResult<Produto> Get(int id)
+        [HttpGet("{id:int:min(1)}", Name = "ObterProduto")]
+        public async Task<IActionResult> GetAsync(int id)
         {
             try
             {
-                var produto = _context.Produtos?.AsNoTracking().FirstOrDefault(p => p.ProdutoId.Equals(id));
+                var produto = await _context.Produtos?.AsNoTracking().FirstOrDefaultAsync(p => p.ProdutoId.Equals(id));
 
                 if (produto is null)
                 {
-                    return NotFound(PRODUTO_NOTFOUND);
-                }           
-                return Ok(produto);
+                    return StatusCode(StatusCodes.Status404NotFound, produto);
+                }
+
+                return StatusCode(StatusCodes.Status200OK, produto);
             }
             catch (Exception)
             {
-
                 return StatusCode(StatusCodes.Status500InternalServerError, PRODUTO_ERROR);
             }
         }
@@ -127,46 +84,63 @@ namespace ApiCatalago.Controllers
         // SaveChanges é para salvar o produto na tabela do banco,
         // e CreatedAtRouteResult salva o resultado em uma rota e retorna ele;
         [HttpPost]
-        public IActionResult Post(Produto produto)
+        public async Task<IActionResult> PostAsync([FromBody] Produto produto)
         {
-            if(produto is null)
-                return BadRequest(PRODUTO_BADREQUEST);
+            try
+            {
+                _context.Produtos?.Add(produto);
+                await _context.SaveChangesAsync();
 
-            _context.Produtos?.Add(produto);
-            _context.SaveChanges();
-
-            return new CreatedAtRouteResult("ObterProduto",
-                new { id = produto.ProdutoId }, produto);
-
+                return new CreatedAtRouteResult("ObterProduto",
+                    new { id = produto.ProdutoId }, produto);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, PRODUTO_ERROR);
+            }
         }
 
         //Entry permite acesso a um objeto na tabela e permite alterar o seu estado a partir de EntityState.Modified
-        [HttpPut("{id:int}")]
-        public IActionResult Put(int id, Produto produto)
+        [HttpPut("{id:int:min(1)}")]
+        public async Task<IActionResult> PutAsync(int id, [FromBody] Produto produto)
         {
-            if(id != produto.ProdutoId)
-                return BadRequest(PRODUTO_IDERROR);
+            try
+            {
+                if (id != produto.ProdutoId)
+                    return StatusCode(StatusCodes.Status400BadRequest, produto);
 
-            _context.Entry(produto).State = EntityState.Modified;
-            _context.SaveChanges();
+                _context.Entry(produto).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
 
-            return Ok(produto);
+                return StatusCode(StatusCodes.Status200OK, produto);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, PRODUTO_ERROR);
+            }
         }
 
-        //Segue a mesma logica de get, mas com a diferença que remove da lista o produto, depois salva 
-        [HttpDelete("{id:int}")]
-        public IActionResult Delete(int id)
+        //Segue a mesma logica de get, mas com a diferença que remove da lista o produto, depois salva
+        //Retorna um stuscode 200 caso sucesso e 404 caso insucesso
+        [HttpDelete("{id:int:min(1)}")]
+        public async Task<IActionResult> DeleteAsync(int id)
         {
-            var produto = _context.Produtos?.FirstOrDefault(p => p.ProdutoId.Equals(id));
+            try
+            {
+                var produto = await _context.Produtos?.FirstOrDefaultAsync(p => p.ProdutoId.Equals(id));
 
-            if (produto is null)
-                return NotFound(PRODUTO_NOTFOUND);
+                if (produto is null)
+                    return StatusCode(StatusCodes.Status404NotFound, produto);
 
-            _context.Produtos?.Remove(produto);
-            _context.SaveChanges();
+                _context.Produtos?.Remove(produto);
+                _context.SaveChanges();
 
-            return Ok(produto);
+                return StatusCode(StatusCodes.Status200OK, produto);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, PRODUTO_ERROR);
+            }
         }
-
     }
 }
