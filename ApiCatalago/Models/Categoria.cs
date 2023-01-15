@@ -21,14 +21,14 @@ public class Categoria
 
     [Required]
     [StringLength(80)]
-    public string? Nome { get; set; }
+    public string Nome { get; set; }
 
     [Required]
     [StringLength(300)]
-    public string? ImagemURL { get; set; }
+    public string ImagemURL { get; set; }
 
     /// <summary>
     /// Mapeando o relacionamento de um para muitos. Onde Categoria possui uma coleção de Produto.
     /// </summary>
-    public ICollection<Produto>? Produtos { get; set; }
+    public ICollection<Produto> Produtos { get; set; }
 }

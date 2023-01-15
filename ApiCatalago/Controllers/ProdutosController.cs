@@ -70,7 +70,7 @@ namespace ApiCatalago.Controllers
 
                 if (produto is null)
                 {
-                    return StatusCode(StatusCodes.Status404NotFound, produto);
+                    return StatusCode(StatusCodes.Status404NotFound, PRODUTO_NOTFOUND);
                 }
 
                 return StatusCode(StatusCodes.Status200OK, produto);
