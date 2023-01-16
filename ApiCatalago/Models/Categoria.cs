@@ -1,4 +1,7 @@
-﻿using System.Collections.ObjectModel;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Swashbuckle.AspNetCore.Annotations;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
@@ -17,6 +20,7 @@ public class Categoria
     }
 
     [Key]
+    [SwaggerSchema(ReadOnly = true)]
     public int CategoriaId { get; set; }
 
     [Required]
@@ -30,5 +34,7 @@ public class Categoria
     /// <summary>
     /// Mapeando o relacionamento de um para muitos. Onde Categoria possui uma coleção de Produto.
     /// </summary>
+    [SwaggerSchema(ReadOnly = true)]
+
     public ICollection<Produto> Produtos { get; set; }
 }

@@ -2,6 +2,7 @@
 using ApiCatalago.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace ApiCatalago.Controllers
 {
@@ -11,6 +12,7 @@ namespace ApiCatalago.Controllers
     {
         private readonly ApiCatalogoDbContext _context;
         private const string CATEGORIA_NOTFOUND = "Categoria não encontrada";
+        private const string CATEGORIA_ERROR = "Ocorreu um erro ao tratar a sua solicitação";
 
         public CategoriasController(ApiCatalogoDbContext context)
         {
@@ -18,66 +20,122 @@ namespace ApiCatalago.Controllers
         }
 
         [HttpGet("produtos")]
-        public ActionResult<IEnumerable<Categoria>> GetCategoriasProdutos()
+        public async Task<ActionResult<IEnumerable<Categoria>>> GetCategoriasProdutosAsync()
         {
-            return _context.Categorias.Include(p => p.Produtos).AsNoTracking().Take(5).ToList();
+            try
+            {
+                var produtos = await _context.Categorias.Include(p => p.Produtos).AsNoTracking().Take(5).ToListAsync();
+
+                if (produtos is null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, CATEGORIA_NOTFOUND);
+                }
+                return StatusCode(StatusCodes.Status200OK, produtos);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, CATEGORIA_ERROR);
+            }
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Categoria>> Get()
+        public async Task<ActionResult<IEnumerable<Categoria>>> GetCategoriasAsync()
         {
-            return _context.Categorias.AsNoTracking().Take(5).ToList();
+            try
+            {
+                var categorias = await _context.Categorias.Select(c => new { c.CategoriaId, c.Nome, c.ImagemURL }).AsNoTracking().Take(5).ToListAsync();
+
+                if (categorias is null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, CATEGORIA_NOTFOUND);
+                }
+                return StatusCode(StatusCodes.Status200OK, categorias);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, CATEGORIA_ERROR);
+            }
         }
 
 
-        [HttpGet("{id:int}", Name = "ObterCategoria")]
-        public ActionResult Get(int id)
+        [HttpGet("{id:int:min(1)}", Name = "ObterCategoria")]
+        public async Task<IActionResult> GetCategoriaAsync(int id)
         {
-            var categoria = _context.Categorias?.AsNoTracking().FirstOrDefault(id => id.CategoriaId.Equals(id));
+            try
+            {
+                var categoria = await _context.Categorias.AsNoTracking().FirstOrDefaultAsync(id => id.CategoriaId.Equals(id));
 
-            if (categoria is null)
-                return NotFound(CATEGORIA_NOTFOUND);
-
-            return Ok(categoria);
+                if (categoria is null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, CATEGORIA_NOTFOUND);
+                }
+                return StatusCode(StatusCodes.Status200OK, categoria);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, CATEGORIA_ERROR);
+            }
         }
 
         [HttpPost]
-        public ActionResult Post([FromBody] Categoria categoria)
+        public async Task<IActionResult> PostCategoriaAync([FromBody] Categoria categoria)
         {
-            if (categoria is null)
-                return BadRequest();
+            try
+            {
+                _context.Categorias.Add(categoria);
+                await _context.SaveChangesAsync();
 
-            _context.Categorias?.Add(categoria);
-            _context.SaveChanges();
-
-            return new CreatedAtRouteResult("ObterCategoria",
-                new { id = categoria.CategoriaId }, categoria);
+                return new CreatedAtRouteResult("ObterCategoria",
+                    new { id = categoria.CategoriaId }, categoria);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, CATEGORIA_ERROR);
+            }
         }
 
-        [HttpPut("{id:int}")]
-        public ActionResult Put(int id, [FromBody] Categoria categoria)
+        [HttpPut("{id:int:min(1)}")]
+        public async Task<IActionResult> PutCategoriasAsync(int id, [FromBody] Categoria categoria)
         {
-            if (id != categoria.CategoriaId)
-                return BadRequest();
+            try
+            {
+                if (id != categoria.CategoriaId)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, CATEGORIA_NOTFOUND);
+                }
 
-            _context.Entry(categoria).State = EntityState.Modified;
-            _context.SaveChanges();
+                _context.Entry(categoria).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
 
-            return Ok(categoria);
+                return StatusCode(StatusCodes.Status200OK, categoria);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, CATEGORIA_ERROR);
+            }
         }
 
-        [HttpDelete]
-        public ActionResult Delete(int id)
+        [HttpDelete("{id:int:min(1)}")]
+        public async Task<IActionResult> DeleteCategoriaAsync(int id)
         {
-            var categoria = _context.Categorias?.FirstOrDefault(id => id.CategoriaId.Equals(id));
+            try
+            {
+                var categoria = await _context.Categorias.FirstOrDefaultAsync(id => id.CategoriaId.Equals(id));
 
-            if (categoria is null)
-                return NotFound(CATEGORIA_NOTFOUND);
+                if (categoria is null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, CATEGORIA_NOTFOUND);
+                }
 
-            _context.Categorias?.Remove(categoria);
-            _context.SaveChanges();
+                _context.Categorias?.Remove(categoria);
+                await _context.SaveChangesAsync();
 
-            return Ok(categoria);
+                return StatusCode(StatusCodes.Status200OK, categoria);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, CATEGORIA_ERROR);
+            }
         }
     }
 }

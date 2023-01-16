@@ -12,9 +12,7 @@ namespace ApiCatalago.Controllers
     {
         private readonly ApiCatalogoDbContext _context;
         private const string PRODUTO_NOTFOUND = "Produto não encontrado";
-        private const string PRODUTO_BADREQUEST = "Produto não pode ser nulo";
-        private const string PRODUTO_IDERROR = "O id do produto não coincide";
-        private const string PRODUTO_ERROR = "Ocoreu um erro ao tratar a sua solicitação";
+        private const string PRODUTO_ERROR = "Ocorreu um erro ao tratar a sua solicitação";
 
         public ProdutosController(ApiCatalogoDbContext context)
         {
