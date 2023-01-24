@@ -30,9 +30,6 @@ public class Produto
 
     public float Estoque { get; set; }
 
-    /// <summary>
-    /// Visivel apenas para leitura [GET]
-    /// </summary>
     [SwaggerSchema(ReadOnly = true)]
     public DateTime DataCadastro { get; set; } = DateTime.Now;
 
